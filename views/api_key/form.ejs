@@ -1,0 +1,30 @@
+<%- include("header"); %>
+
+<p>Enter your e-mail in the form below to request an API-key.</p>
+
+<% if (message) { %>
+    <p class="error" id="error"><%= message %></p>
+<% } %>
+
+<form method="post" action="/api_key/confirmation">
+    <label>E-mail:</label>
+    <input type="email" value="<%= email %>" placeholder="E-mail" name="email">
+
+    <label><input type="checkbox" value="gdpr" name="gdpr"> I approve the terms and conditions described below.</label>
+
+    <input type="submit" value="Request API key">
+</form>
+
+<div class="terms">
+    <h3>Terms and Conditions</h3>
+
+    <p>Your email will be stored together with your personal API-key to be able to contact you if you violate the terms and conditions and/or send an extraordinary amount of requests to the API.</p>
+
+    <p>You are responsible for any data that you store in the API's database and that the data does not violate current jurisdiction.</p>
+
+    <p>You can at any time request that your API-key is deleted together with all of the data that you have stored in the API's database by using the <a href="/api_key/deregister">deregister form</a>.</p>
+</div>
+
+<p><a href="/">API documentation</a></p>
+
+<%- include("footer"); %>

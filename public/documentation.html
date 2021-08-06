@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>auth Documentation</title>
+
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/monokai-sublime.min.css">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header>
+    <div class="inner-header">
+        <h1>auth Documentation</h1>
+    </div>
+</header>
+
+<main class="content">
+    <section id="toc">
+        <ol>
+            <li><a href="#apikeys">API keys</a></li>
+            <li><a href="#auth">Register and login</a></li>
+            <li><a href="#users">Users</a></li>
+            <li><a href="#data">User data</a></li>
+            <li><a href="#code">Code examples</a></li>
+        </ol>
+    </section>
+
+
+    <section id="apikeys">
+        <h2>API keys</h2>
+        <p><a href="/api_key">Request a personal API key.</a></p>
+
+        <p>An API key is required for all requests.</p>
+
+        <p>If an API key is not provided the following error is given:</p>
+        <pre class="lager">{
+            "errors": {
+            "status": 401,
+            "source": "/products",
+            "title": "Valid API key",
+            "detail": "No valid API key provided."
+        }
+}</pre>
+    </section>
+
+    <section id="auth">
+        <h2>Register and login</h2>
+
+        <h3>Register</h3>
+        <pre class="lager">POST /register</pre>
+        <p>Required parameters:</p>
+        <pre class="lager">api_key
+email
+password</pre>
+        <p>Result:</p>
+        <pre class="lager">{
+    "data": {
+        "message": "User successfully registered."
+    }
+}</pre>
+
+        <h3>Login</h3>
+        <pre class="lager">POST /login</pre>
+        <p>Required parameters:</p>
+        <pre class="lager">api_key
+email
+password</pre>
+        <p>Result:</p>
+        <pre class="lager">{
+    "data": {
+        "type": "success",
+        "message": "User logged in",
+        "user": {
+            "api_key": "...",
+            "email": "unknown@example.com"
+        },
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey..."
+    }
+}</pre>
+        <p><strong>N.B.</strong> The access token expires after 24 hours.</p>
+
+    </section>
+
+    <section id="users">
+        <h2>Users</h2>
+
+        <h3>Get all users</h3>
+        <pre class="lager">GET /users?api_key=[API_KEY]</pre>
+        <p>Result:</p>
+        <pre class="lager">{
+    "data": [
+        {
+            "user_id": 1,
+            "email": "test@test.se"
+        }
+    ]
+}</pre>
+
+        <h3>Get specific user</h3>
+        <pre class="lager">GET /users/1?api_key=[API_KEY]</pre>
+        <p>Result:</p>
+        <pre class="lager">{
+    "data": {
+        "user_id": 1,
+        "email": "test@test.se"
+    }
+}</pre>
+
+    </section>
+
+    <section id="data">
+        <h2>User data</h2>
+
+        <p>
+            To use the following route, you need a valid JSON Web Token (JWT) set in the HTTP-header.<br />
+            The 'x-access-token' header should contain the JWT.
+        </p>
+
+
+        <h3>Get all data for authenticated user</h3>
+        <pre class="lager">GET /data?api_key=[API_KEY]</pre>
+        <p>User data has the following attributes:</p>
+        <pre class="lager">id
+artefact
+api_key</pre>
+        <p>In the following examples the artefact entity is used to store JSON-data. But any type of data can be stored for instance URLs, likes, upvotes or anything that can be stored as text.</p>
+        <p>Result:</p>
+        <pre class="lager">{
+    data: [
+        {
+            id: 1,
+            email: 'test@example.com',
+            artefact: '{"latitude":56.18185835,"longitude":15.5911037,"place":"BTH"}'
+        }
+    ]
+}</pre>
+
+        <h3>Create data for authenticated user</h3>
+        <pre class="lager">POST /data</pre>
+        <p>Required params:</p>
+        <pre class="lager">artefact
+api_key</pre>
+        <p>Result:</p>
+        <pre class="lager">{
+    data:  {
+        id: 1,
+        email: 'test@example.com',
+        artefact: '{"latitude":56.18185835,"longitude":15.5911037,"place":"BTH"}'
+    }
+}</pre>
+
+        <h3>Update data for authenticated user</h3>
+        <pre class="lager">PUT /data</pre>
+        <p>Required params:</p>
+        <pre class="lager">id
+artefact
+api_key</pre>
+        <p>Result:</p>
+        <pre class="lager">204 No Content</pre>
+
+        <h3>Delete data for authenticated user</h3>
+        <pre class="lager">DELETE /data</pre>
+        <p>Required params:</p>
+        <pre class="lager">id
+api_key</pre>
+        <p>Result:</p>
+        <pre class="lager">204 No Content</pre>
+    </section>
+
+    <section id="code">
+        <h2>Code Examples</h2>
+
+        <h3>JavaScript fetch</h3>
+        <pre class="lager">POST /register</pre>
+        <pre>
+    <code class="javascript">var user = {
+    email: "test@test.se",
+    password: "test1234",
+    api_key: [API_KEY]
+};
+
+fetch("https://auth.emilfolino.se/register", {
+    body: JSON.stringify(user),
+    headers: {
+        'content-type': 'application/json'
+    },
+    method: 'POST'
+})
+.then(function (response) {
+    return response.json();
+}).then(function(result) {
+
+});</code>
+</pre>
+
+
+        <br>
+        <pre class="lager">POST /login</pre>
+        <pre>
+        <code class="javascript">var user = {
+    email: "test@test.se",
+    password: "test1234",
+    api_key: [API_KEY]
+};
+
+fetch("https://auth.emilfolino.se/login", {
+    body: JSON.stringify(user),
+    headers: {
+        'content-type': 'application/json'
+    },
+    method: 'POST'
+})
+.then(function (response) {
+    return response.json();
+}).then(function(result) {
+    var token = result.data.token;
+});</code>
+</pre>
+
+        <br>
+        <pre class="lager">GET /users</pre>
+        <pre>
+            <code class="javascript">fetch("https://auth.emilfolino.se/users?api_key=[API_KEY]")
+.then(function (response) {
+    return response.json();
+}).then(function(result) {
+    var users = result.data;
+});</code>
+</pre>
+
+        <br>
+        <pre class="lager">GET /data</pre>
+        <pre>
+            <code class="javascript">fetch("https://auth.emilfolino.se/data?api_key=[API_KEY]", {
+    headers: {
+      'x-access-token': [TOKEN]
+    }
+})
+.then(function (response) {
+    return response.json();
+}).then(function(result) {
+    var allData = result.data;
+});</code>
+</pre>
+
+        <br>
+        <pre class="lager">POST /data</pre>
+        <pre>
+            <code class="javascript">var data = {
+    artefact: '{"latitude":56.18185835,"longitude":15.5911037,"place":"BTH"}',
+    api_key: [API_KEY]
+};
+
+fetch("https://auth.emilfolino.se/data", {
+    body: JSON.stringify(data),
+    headers: {
+        'content-type': 'application/json',
+        'x-access-token': [TOKEN]
+    },
+    method: 'POST'
+})
+.then(function (response) {
+    return response.json();
+}).then(function(result) {
+
+});</code>
+</pre>
+
+
+        <h3>Mithril</h3>
+        <pre class="lager">POST /register</pre>
+        <pre>
+    <code class="javascript">var user = {
+    email: "test@test.se",
+    password: "test1234",
+    api_key: [API_KEY]
+};
+
+m.request({
+    url: "https://auth.emilfolino.se/register",
+    body: user,
+    method: 'POST'
+}).then(function(result) {
+
+});</code>
+</pre>
+
+
+        <br>
+        <pre class="lager">POST /login</pre>
+        <pre>
+        <code class="javascript">var user = {
+    email: "test@test.se",
+    password: "test1234",
+    api_key: [API_KEY]
+};
+
+m.request({
+    url: "https://auth.emilfolino.se/login",
+    body: user,
+    method: 'POST'
+}).then(function(result) {
+    var token = result.data.token;
+});</code>
+</pre>
+
+        <br>
+        <pre class="lager">GET /users</pre>
+        <pre>
+            <code class="javascript">m.request({
+    method: "GET",
+    url: "https://auth.emilfolino.se/users?api_key=[API_KEY]"
+}).then(function(result) {
+    var users = result.data;
+});</code>
+</pre>
+
+        <br>
+        <pre class="lager">GET /data</pre>
+        <pre>
+            <code class="javascript">m.request({
+    method: "GET",
+    url: "https://auth.emilfolino.se/data?api_key=[API_KEY]",
+    headers: {
+      'x-access-token': [TOKEN]
+    }
+}).then(function(result) {
+    var allData = result.data;
+});</code>
+</pre>
+
+        <br>
+        <pre class="lager">POST /data</pre>
+        <pre>
+            <code class="javascript">var data = {
+    artefact: '{"latitude":56.18185835,"longitude":15.5911037,"place":"BTH"}',
+    api_key: [API_KEY]
+};
+
+m.request({
+    url: "https://auth.emilfolino.se/data",
+    body: data,
+    method: 'POST',
+    headers: {
+      'x-access-token': [TOKEN]
+    }
+}).then(function(result) {
+
+});</code>
+</pre>
+    </section>
+</main>
+
+<footer class="footer">
+    <div class="inner-footer">
+        <p>&copy; <a href="https://emilfolino.se">Emil Folino</a></p>
+        <p>The API is used in a course given in the Webprogrammering Cluster <a href="https://dbwebb.se">dbwebb</a> at <a href="https://bth.se">Blekinge Tekniska Högskola</a>.</p>
+    </div>
+</footer>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+
+</body>
+</html>

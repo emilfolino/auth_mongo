@@ -1,0 +1,21 @@
+<%- include("header"); %>
+
+<p>Enter your e-mail and API-key in the form below to deregister.</p>
+
+<% if (message) { %>
+    <p class="error" id="error"><%= message %></p>
+<% } %>
+
+<form method="post" action="/api_key/deregister">
+    <label>E-mail:</label>
+    <input type="email" value="<%= email %>" placeholder="E-mail" name="email">
+
+    <label>API-key:</label>
+    <input type="text" value="<%= apikey %>" placeholder="API-key" name="apikey">
+
+    <input type="submit" value="Deregister">
+</form>
+
+<p><a href="/api_key">Go back</a></p>
+
+<%- include("footer"); %>
