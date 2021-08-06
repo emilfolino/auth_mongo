@@ -70,7 +70,7 @@ const auth = {
         }
     },
 
-    getNewAPIKey: function(res, email) {
+    getNewAPIKey: async function(res, email) {
         let data = {
             apiKey: ""
         };
@@ -97,7 +97,7 @@ const auth = {
 
             return auth.getUniqueAPIKey(res, email);
         } catch (e) {
-            data.message = "Database error: " + err.message;
+            data.message = "Database error: " + e.message;
             data.email = email;
 
             return res.render("api_key/form", data);
@@ -106,129 +106,121 @@ const auth = {
         }
     },
 
-    getUniqueAPIKey: function(res, email) {
+    getUniqueAPIKey: async function(res, email) {
         const apiKey = hat();
         let data = {
             apiKey: ""
         };
 
-        db.get("SELECT key FROM apikeys WHERE key = ?", apiKey, (err, row) => {
-            if (err) {
-                data.message = "Database error: " + err.message;
-                data.email = email;
+        try {
+            const db = await database.getDb();
 
-                return res.render("api_key/form", data);
+            const filter = { key: apiKey };
+
+            const keyObject = await db.collection.findOne(filter);
+
+            if (!keyObject) {
+                return await auth.insertApiKey();
             }
 
-            if (row === undefined) {
-                db.run("INSERT INTO apikeys (key, email) VALUES (?, ?)",
-                    apiKey,
-                    email, (err) => {
-                        if (err) {
-                            data.message = "Database error: " + err.message;
-                            data.email = email;
+            return await auth.getUniqueAPIKey(res, email);
+        } catch (e) {
+            data.message = "Database error: " + e.message;
+            data.email = email;
 
-                            return res.render("api_key/form", data);
-                        }
-
-                        data.apiKey = apiKey;
-
-                        return res.render("api_key/confirmation", data);
-                    });
-            } else {
-                return auth.getUniqueAPIKey(res, email);
-            }
-        });
+            return res.render("api_key/form", data);
+        } finally {
+            await db.client.close();
+        }
     },
 
-    deregister: function(res, body) {
+    insertApiKey: async function(res, email, apiKey) {
+        let data = {};
+
+        try {
+            const db = await database.getDb();
+
+            data.apiKey = apiKey;
+
+            const doc = { email: email, key: apiKey };
+            const result = await db.collection.insertOne(doc);
+
+            return res.render("api_key/confirmation", data);
+        } catch (e) {
+            data.message = "Database error: " + e.message;
+            data.email = email;
+
+            return res.render("api_key/form", data);
+        } finally {
+            await db.client.close();
+        }
+    },
+
+    deregister: async function(res, body) {
         const email = body.email;
         const apiKey = body.apikey;
 
-        db.get("SELECT key FROM apikeys WHERE key = ? and email = ?",
-            apiKey,
-            email,
-            (err, row) => {
-                if (err) {
-                    let data = {
-                        message: "Database error: " + err.message,
-                        email: email,
-                        apikey: apiKey
-                    };
+        let data = {
+            apiKey: ""
+        };
 
-                    return res.render("api_key/deregister", data);
-                }
+        try {
+            const db = await database.getDb();
 
-                if (row === undefined) {
-                    let data = {
-                        message: "The E-mail and API-key combination does not exist.",
-                        email: email,
-                        apikey: apiKey
-                    };
+            const filter = { key: apiKey, email: email };
 
-                    return res.render("api_key/deregister", data);
-                }
+            const keyObject = await db.collection.findOne(filter);
 
-                return auth.deleteData(res, apiKey, email);
-            });
-    },
+            if (keyObject) {
+                return await auth.deleteData(res, apiKey, email);
+            } else {
+                let data = {
+                    message: "The E-mail and API-key combination does not exist.",
+                    email: email,
+                    apikey: apiKey
+                };
 
-    deleteData: function(res, apiKey, email) {
-        let errorMessages = [];
-
-        db.run("DELETE FROM apikeys WHERE key = ?",
-            apiKey,
-            (err) => {
-                if (err) {
-                    errorMessages.push(err);
-                }
-
-                db.run("DELETE FROM user_data WHERE apiKey = ?",
-                    apiKey,
-                    (err) => {
-                        if (err) {
-                            errorMessages.push(err);
-                        }
-
-                        db.run("DELETE FROM users WHERE apiKey = ?",
-                            apiKey,
-                            (err) => {
-                                if (err) {
-                                    errorMessages.push(err);
-                                }
-
-                                return auth.afterDelete(
-                                    res,
-                                    apiKey,
-                                    email,
-                                    errorMessages
-                                );
-                            });
-                    });
-            });
-    },
-
-    afterDelete: function(res, apiKey, email, errorMessages) {
-        if (errorMessages.length > 0) {
+                return res.render("api_key/deregister", data);
+            }
+        } catch (e) {
             let data = {
-                message: "Could not delete data due to: " +
-                    errorMessages.join(" | "),
+                message: "Database error: " + e.message,
                 email: email,
                 apikey: apiKey
             };
 
             return res.render("api_key/deregister", data);
+        } finally {
+            await db.client.close();
         }
-
-        let data = {
-            message: "All data has been deleted",
-            email: ""
-        };
-
-        return res.render("api_key/form", data);
     },
 
-    login: function(res, body) {
+    deleteData: async function(res, apiKey, email) {
+        try {
+            const db = await database.getDb();
+
+            const filter = { key: apiKey, email: email };
+            const result = await db.collection.deleteOne(filter);
+
+            let data = {
+                message: "All data has been deleted"
+            };
+
+            return res.render("api_key/form", data);
+        } catch (e) {
+            let data = {
+                message: "Could not delete data due to: " + e.message,
+                email: email,
+                apikey: apiKey
+            };
+
+            return res.render("api_key/deregister", data);
+        } finally {
+            await db.client.close();
+        }
+    },
+
+    login: async function(res, body) {
         const email = body.email;
         const password = body.password;
         const apiKey = body.api_key;
@@ -244,70 +236,84 @@ const auth = {
             });
         }
 
-        db.get("SELECT * FROM users WHERE apiKey = ? AND email = ?",
-            apiKey,
-            email,
-            (err, rows) => {
-                if (err) {
-                    return res.status(500).json({
-                        errors: {
-                            status: 500,
-                            source: "/login",
-                            title: "Database error",
-                            detail: err.message
-                        }
-                    });
+        try {
+            const db = await database.getDb();
+
+            const filter = {
+                key: apiKey,
+                users: {
+                    email: email,
+                    password: password,
                 }
+            };
+            const user = await db.collection.findOne(filter);
 
-                if (rows === undefined) {
-                    return res.status(401).json({
-                        errors: {
-                            status: 401,
-                            source: "/login",
-                            title: "User not found",
-                            detail: "User with provided email not found."
-                        }
-                    });
-                }
-
-                const user = rows;
-
-                bcrypt.compare(password, user.password, (err, result) => {
-                    if (err) {
-                        return res.status(500).json({
-                            errors: {
-                                status: 500,
-                                source: "/login",
-                                title: "bcrypt error",
-                                detail: "bcrypt error"
-                            }
-                        });
+            if (user) {
+                return auth.comparePasswords(
+                    res,
+                    password,
+                    user,
+                );
+            } else {
+                return res.status(401).json({
+                    errors: {
+                        status: 401,
+                        source: "/login",
+                        title: "User not found",
+                        detail: "User with provided email not found."
                     }
-
-                    if (result) {
-                        let payload = { api_key: user.apiKey, email: user.email };
-                        let jwtToken = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
-
-                        return res.json({
-                            data: {
-                                type: "success",
-                                message: "User logged in",
-                                user: payload,
-                                token: jwtToken
-                            }
-                        });
-                    }
-
-                    return res.status(401).json({
-                        errors: {
-                            status: 401,
-                            source: "/login",
-                            title: "Wrong password",
-                            detail: "Password is incorrect."
-                        }
-                    });
                 });
+            }
+        } catch (e) {
+            return res.status(500).json({
+                errors: {
+                    status: 500,
+                    source: "/login",
+                    title: "Database error",
+                    detail: e.message
+                }
             });
+        } finally {
+            await db.client.close();
+        }
+    },
+
+    comparePasswords: function(res, password, user) {
+        bcrypt.compare(password, user.password, (err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    errors: {
+                        status: 500,
+                        source: "/login",
+                        title: "bcrypt error",
+                        detail: "bcrypt error"
+                    }
+                });
+            }
+
+            if (result) {
+                let payload = { api_key: user.apiKey, email: user.email };
+                let jwtToken = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
+
+                return res.json({
+                    data: {
+                        type: "success",
+                        message: "User logged in",
+                        user: payload,
+                        token: jwtToken
+                    }
+                });
+            }
+
+            return res.status(401).json({
+                errors: {
+                    status: 401,
+                    source: "/login",
+                    title: "Wrong password",
+                    detail: "Password is incorrect."
+                }
+            });
+        });
     },
 
     register: function(res, body) {
