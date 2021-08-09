@@ -316,7 +316,7 @@ const auth = {
         });
     },
 
-    register: function(res, body) {
+    register: async function(res, body) {
         const email = body.email;
         const password = body.password;
         const apiKey = body.api_key;
@@ -344,27 +344,36 @@ const auth = {
                 });
             }
 
-            db.run("INSERT INTO users (apiKey, email, password) VALUES (?, ?, ?)",
-                apiKey,
-                email,
-                hash, (err) => {
-                    if (err) {
-                        return res.status(500).json({
-                            errors: {
-                                status: 500,
-                                source: "/register",
-                                title: "Database error",
-                                detail: err.message
-                            }
-                        });
+            let filter = { key: apiKey };
+            let updateDoc = {
+                $push: {
+                    users: {
+                        email: email,
+                        password: hash,
                     }
+                }
+            };
 
-                    return res.status(201).json({
-                        data: {
-                            message: "User successfully registered."
-                        }
-                    });
+            try {
+                let result = await db.collection.updateOne(filter, updateDoc);
+
+                return res.status(201).json({
+                    data: {
+                        message: "User successfully registered."
+                    }
                 });
+            } catch (e) {
+                return res.status(500).json({
+                    errors: {
+                        status: 500,
+                        source: "/register",
+                        title: "Database error",
+                        detail: err.message
+                    }
+                });
+            } finally {
+                db.client.close();
+            }
         });
     },
 
