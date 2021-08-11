@@ -11,7 +11,7 @@ const server = require('../app.js');
 
 chai.should();
 
-const db = require("../db/database.js");
+const database = require("../db/database.js");
 
 chai.use(chaiHttp);
 
@@ -20,26 +20,13 @@ let token = "";
 
 describe('user_data', () => {
     before(() => {
-        return new Promise((resolve) => {
-            db.run("DELETE FROM apikeys", (err) => {
-                if (err) {
-                    console.error("Could not empty test DB table orders", err.message);
-                }
+        return new Promise(async (resolve) => {
+            const db = await database.getDb();
 
-                db.run("DELETE FROM user_data", (err) => {
-                    if (err) {
-                        console.error("Could not empty test DB table orders", err.message);
-                    }
+            await db.collection.drop();
+            await db.client.close();
 
-                    db.run("DELETE FROM users", (err) => {
-                        if (err) {
-                            console.error("Could not empty test DB table orders", err.message);
-                        }
-
-                        resolve();
-                    });
-                });
-            });
+            resolve();
         });
     });
 

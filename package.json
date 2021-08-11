@@ -4,7 +4,6 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "pretest": "bash db/reset_test_db.bash",
         "test": "nyc --reporter=html --reporter=text --reporter=clover mocha --timeout 10000",
         "posttest": "npm run eslint",
         "start": "node app.js",
