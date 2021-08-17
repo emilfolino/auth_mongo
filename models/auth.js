@@ -45,6 +45,8 @@ const auth = {
             const keyObject = await db.collection.findOne(filter);
 
             if (keyObject) {
+                await db.client.close();
+
                 return next();
             }
 
@@ -65,8 +67,6 @@ const auth = {
                     detail: e.message
                 }
             });
-        } finally {
-            await db.client.close();
         }
     },
 
@@ -95,51 +95,48 @@ const auth = {
                 return res.render("api_key/confirmation", data);
             }
 
-            return auth.getUniqueAPIKey(res, email);
+            return auth.getUniqueAPIKey(res, email, db);
         } catch (e) {
             data.message = "Database error: " + e.message;
             data.email = email;
 
             return res.render("api_key/form", data);
-        } finally {
-            await db.client.close();
         }
     },
 
-    getUniqueAPIKey: async function(res, email) {
+    getUniqueAPIKey: async function(res, email, db) {
         const apiKey = hat();
         let data = {
             apiKey: ""
         };
 
         try {
-            const db = await database.getDb();
-
             const filter = { key: apiKey };
 
             const keyObject = await db.collection.findOne(filter);
 
             if (!keyObject) {
-                return await auth.insertApiKey();
+                return await auth.insertApiKey(
+                    res,
+                    email,
+                    apiKey,
+                    db
+                );
             }
 
-            return await auth.getUniqueAPIKey(res, email);
+            return await auth.getUniqueAPIKey(res, email, db);
         } catch (e) {
             data.message = "Database error: " + e.message;
             data.email = email;
 
             return res.render("api_key/form", data);
-        } finally {
-            await db.client.close();
         }
     },
 
-    insertApiKey: async function(res, email, apiKey) {
+    insertApiKey: async function(res, email, apiKey, db) {
         let data = {};
 
         try {
-            const db = await database.getDb();
-
             data.apiKey = apiKey;
 
             const doc = { email: email, key: apiKey };
@@ -172,13 +169,15 @@ const auth = {
             const keyObject = await db.collection.findOne(filter);
 
             if (keyObject) {
-                return await auth.deleteData(res, apiKey, email);
+                return await auth.deleteData(res, apiKey, email, db);
             } else {
                 let data = {
                     message: "The E-mail and API-key combination does not exist.",
                     email: email,
                     apikey: apiKey
                 };
+
+                await db.client.close();
 
                 return res.render("api_key/deregister", data);
             }
@@ -190,20 +189,17 @@ const auth = {
             };
 
             return res.render("api_key/deregister", data);
-        } finally {
-            await db.client.close();
         }
     },
 
-    deleteData: async function(res, apiKey, email) {
+    deleteData: async function(res, apiKey, email, db) {
         try {
-            const db = await database.getDb();
-
             const filter = { key: apiKey, email: email };
             const result = await db.collection.deleteOne(filter);
 
             let data = {
-                message: "All data has been deleted"
+                message: "All data has been deleted",
+                email: "",
             };
 
             return res.render("api_key/form", data);
@@ -239,20 +235,19 @@ const auth = {
         try {
             const db = await database.getDb();
 
-            const filter = {
-                key: apiKey,
-                users: {
-                    email: email,
-                    password: password,
+            const filter = { key: apiKey, users: {
+                $elemMatch: {
+                    email: email
                 }
-            };
+            } };
+
             const user = await db.collection.findOne(filter);
 
             if (user) {
                 return auth.comparePasswords(
                     res,
                     password,
-                    user,
+                    user.users[0],
                 );
             } else {
                 return res.status(401).json({
@@ -344,17 +339,19 @@ const auth = {
                 });
             }
 
-            let filter = { key: apiKey };
-            let updateDoc = {
-                $push: {
-                    users: {
-                        email: email,
-                        password: hash,
-                    }
-                }
-            };
+            const db = await database.getDb();
 
             try {
+                let filter = { key: apiKey };
+                let updateDoc = {
+                    $push: {
+                        users: {
+                            email: email,
+                            password: hash,
+                        }
+                    }
+                };
+
                 let result = await db.collection.updateOne(filter, updateDoc);
 
                 return res.status(201).json({
@@ -372,7 +369,7 @@ const auth = {
                     }
                 });
             } finally {
-                db.client.close();
+                await db.client.close();
             }
         });
     },

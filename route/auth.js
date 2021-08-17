@@ -22,7 +22,7 @@ router.post('/api_key/confirmation', (req, res) => {
         email: req.body.email
     };
 
-    res.render("api_key/form", data);
+    return res.render("api_key/form", data);
 });
 
 router.get('/api_key/deregister', (req, res) => {

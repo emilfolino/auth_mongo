@@ -12,6 +12,7 @@ const server = require('../app.js');
 chai.should();
 
 const database = require("../db/database.js");
+const collectionName = "keys";
 
 chai.use(chaiHttp);
 
@@ -22,10 +23,22 @@ describe('auth', () => {
         return new Promise(async (resolve) => {
             const db = await database.getDb();
 
-            await db.collection.drop();
-            await db.client.close();
-
-            resolve();
+            db.db.listCollections(
+                { name: collectionName }
+            )
+            .next()
+            .then(async function(info) {
+                if (info) {
+                    await db.collection.drop();
+                }
+            })
+            .catch(function(err) {
+                console.error(err);
+            })
+            .finally(async function() {
+                await db.client.close();
+                resolve();
+            });
         });
     });
 
