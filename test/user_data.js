@@ -56,7 +56,7 @@ describe('user_data', () => {
 
         it('should get 200 as we get apiKey', (done) => {
             let user = {
-                email: "test@auth.com",
+                email: "test@data.com",
                 gdpr: "gdpr"
             };
 
@@ -75,6 +75,30 @@ describe('user_data', () => {
                     apiKey = apiKeyElement.childNodes[0].rawText;
 
                     apiKey.length.should.equal(32);
+
+                    done();
+                });
+        });
+
+        it('should get 200 as we get apiKey', (done) => {
+            let user = {
+                email: "test@datadata.com",
+                gdpr: "gdpr"
+            };
+
+            chai.request(server)
+                .post("/api_key/confirmation")
+                .send(user)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.text.should.be.a("string");
+
+                    let HTMLResponse = HTMLParser.parse(res.text);
+                    let apiKeyElement = HTMLResponse.querySelector('#apikey');
+
+                    apiKeyElement.should.be.an("object");
+
+                    apiKeyElement.childNodes[0].rawText.length.should.equal(32);
 
                     done();
                 });
@@ -230,15 +254,35 @@ describe('user_data', () => {
                 });
         });
 
-        it('200 getting user by id 1', (done) => {
+        it('should get 201 registering user for apiKey', (done) => {
+            let user = {
+                email: "test2@example.com",
+                password: "test123",
+                api_key: apiKey
+            };
+
             chai.request(server)
-                .get("/users/1?api_key=" + apiKey)
+                .post("/register")
+                .send(user)
+                .end((err, res) => {
+                    res.should.have.status(201);
+                    res.body.should.be.an("object");
+                    res.body.should.have.property("data");
+                    res.body.data.should.have.property("message");
+                    res.body.data.message.should.equal("User successfully registered.");
+
+                    done();
+                });
+        });
+
+        it('200 getting users for api key, 2 user', (done) => {
+            chai.request(server)
+                .get("/users?api_key=" + apiKey)
                 .end((err, res) => {
                     res.should.have.status(200);
                     res.body.should.have.property("data");
-                    res.body.data.should.be.an("object");
-                    res.body.data.should.have.property("email");
-                    res.body.data.email.should.equal("test@example.com");
+                    res.body.data.should.be.an("array");
+                    res.body.data.length.should.equal(2);
 
                     done();
                 });
@@ -380,8 +424,10 @@ describe('user_data', () => {
                     res.should.have.status(201);
                     res.body.should.be.an("object");
                     res.body.should.have.property("data");
-                    res.body.data.should.have.property("id");
-                    res.body.data.should.have.property("artefact");
+                    res.body.data.users[0].data[0].should.have.property("_id");
+                    res.body.data.users[0].data[0].should.have.property("artefact");
+
+                    res.body.data.users[0].data[0].artefact.should.equal(JSON.stringify(artefact));
 
                     done();
                 });
@@ -392,6 +438,7 @@ describe('user_data', () => {
                 .get("/data?api_key=" + apiKey)
                 .set("x-access-token", token)
                 .end((err, res) => {
+                    console.log(res.body.data);
                     res.should.have.status(200);
                     res.body.should.be.an("object");
                     res.body.data.should.be.an("array");

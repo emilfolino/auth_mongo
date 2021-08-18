@@ -232,8 +232,10 @@ const auth = {
             });
         }
 
+        let db;
+
         try {
-            const db = await database.getDb();
+            db = await database.getDb();
 
             const filter = { key: apiKey, users: {
                 $elemMatch: {
@@ -339,9 +341,11 @@ const auth = {
                 });
             }
 
-            const db = await database.getDb();
+            let db;
 
             try {
+                db = await database.getDb();
+                
                 let filter = { key: apiKey };
                 let updateDoc = {
                     $push: {
@@ -375,7 +379,8 @@ const auth = {
     },
 
     checkToken: function(req, res, next) {
-        var token = req.headers['x-access-token'];
+        let token = req.headers['x-access-token'];
+        let apiKey = req.query.api_key || req.body.api_key;
 
         if (token) {
             jwt.verify(token, jwtSecret, function(err, decoded) {
@@ -391,12 +396,10 @@ const auth = {
                 }
 
                 req.user = {};
-                req.user.api_key = decoded.api_key;
+                req.user.api_key = apiKey;
                 req.user.email = decoded.email;
 
-                next();
-
-                return undefined;
+                return next();
             });
         } else {
             return res.status(401).json({

@@ -1,26 +1,50 @@
 const database = require("../db/database.js");
+var ObjectId = require('mongodb').ObjectId;
 
 const data = {
     getAllDataForUser: async function (res, req) {
         // req contains user object set in checkToken middleware
-
-
+        let db;
 
         try {
-            const db = await database.getDb();
+            db = await database.getDb();
+
+            // let filter = {
+            //     key: req.user.api_key,
+            //     "users.email": req.user.email,
+            // };
 
             let filter = {
                 key: req.user.api_key,
-                users: {
-                    email: req.user.email
-                }
+                "users.email": req.user.email,
             };
 
-            const keyObject = await db.collection.findOne(filter);
+            const cursor = db.collection.aggregate([
+                {
+                    "$match": filter,
+                },
+                {
+                    "$unwind": "$users",
+                },
+                {
+                    "$match": {
+                        "users.email": req.user.email
+                    }
+                },
+                {
+                    "$replaceRoot": {
+                        "newRoot": "$users"
+                    }
+                }
+            ]);
 
-            if (keyObject) {
-                return res.json({ data: keyObject });
-            }
+            await cursor.forEach(function(element) {
+                console.log(element);
+            });
+
+            let returnObject = [];
+
+            return res.json({ data: returnObject });
         } catch (e) {
             return res.status(500).json({
                 errors: {
@@ -35,74 +59,49 @@ const data = {
         }
     },
 
-    getData: function(res, dataId, status=200) {
-        let sql = "SELECT ROWID as id, artefact FROM user_data " +
-            "WHERE ROWID = ?";
-
-        db.get(
-            sql,
-            dataId,
-            function (err, row) {
-                if (err) {
-                    return res.status(500).json({
-                        error: {
-                            status: 500,
-                            path: "GET /data/:id",
-                            title: "Database error",
-                            message: err.message
-                        }
-                    });
-                }
-
-                return res.status(status).json({ data: row });
-            });
-    },
-
-    createData: function(res, req) {
+    createData: async function(res, req) {
         // req contains user object set in checkToken middleware
+        let apiKey = req.body.api_key;
+        let email = req.user.email;
+        let db;
 
-        let sql = "SELECT ROWID as id FROM users " +
-            "WHERE email = ? and apiKey = ?";
+        try {
+            db = await database.getDb();
 
-        db.get(
-            sql,
-            req.user.email,
-            req.user.api_key,
-            function (err, row) {
-                if (err) {
-                    return res.status(500).json({
-                        error: {
-                            status: 500,
-                            path: "POST /data SELECT userId",
-                            title: "Database error",
-                            message: err.message
-                        }
-                    });
+            const filter = { key: apiKey, "users.email": email };
+            const updateDoc = {
+                $push: {
+                    "users.$.data": {
+                        artefact: req.body.artefact,
+                        _id: new ObjectId(),
+                    }
                 }
+            };
+            const options = { returnDocument : "after" };
 
-                let sql = "INSERT INTO user_data (artefact, userId, apiKey) " +
-                    "VALUES (?, ?, ?)";
+            let result = await db.collection.findOneAndUpdate(
+                filter,
+                updateDoc,
+                options,
+            );
 
-                db.run(
-                    sql,
-                    req.body.artefact,
-                    row.id,
-                    req.user.api_key,
-                    function (err) {
-                        if (err) {
-                            return res.status(500).json({
-                                error: {
-                                    status: 500,
-                                    path: "POST /data INSERT",
-                                    title: "Database error",
-                                    message: err.message
-                                }
-                            });
-                        }
-
-                        return data.getData(res, this.lastID, 201);
-                    });
+            if (result) {
+                return res.status(201).json({
+                    data: result.value
+                });
+            }
+        } catch (e) {
+            return res.status(500).json({
+                error: {
+                    status: 500,
+                    path: "POST /data INSERT",
+                    title: "Database error",
+                    message: e.message
+                }
             });
+        } finally {
+            await db.client.close();
+        }
     },
 
     updateData: function (res, req) {
