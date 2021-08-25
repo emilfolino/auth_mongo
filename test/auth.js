@@ -26,19 +26,19 @@ describe('auth', () => {
             db.db.listCollections(
                 { name: collectionName }
             )
-            .next()
-            .then(async function(info) {
-                if (info) {
-                    await db.collection.drop();
-                }
-            })
-            .catch(function(err) {
-                console.error(err);
-            })
-            .finally(async function() {
-                await db.client.close();
-                resolve();
-            });
+                .next()
+                .then(async function(info) {
+                    if (info) {
+                        await db.collection.drop();
+                    }
+                })
+                .catch(function(err) {
+                    console.error(err);
+                })
+                .finally(async function() {
+                    await db.client.close();
+                    resolve();
+                });
         });
     });
 

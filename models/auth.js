@@ -90,7 +90,7 @@ const auth = {
             const keyObject = await db.collection.findOne(filter);
 
             if (keyObject) {
-                data.apiKey = row.key;
+                data.apiKey = keyObject.key;
 
                 return res.render("api_key/confirmation", data);
             }
@@ -140,7 +140,8 @@ const auth = {
             data.apiKey = apiKey;
 
             const doc = { email: email, key: apiKey };
-            const result = await db.collection.insertOne(doc);
+
+            await db.collection.insertOne(doc);
 
             return res.render("api_key/confirmation", data);
         } catch (e) {
@@ -156,10 +157,6 @@ const auth = {
     deregister: async function(res, body) {
         const email = body.email;
         const apiKey = body.apikey;
-
-        let data = {
-            apiKey: ""
-        };
 
         try {
             const db = await database.getDb();
@@ -195,7 +192,8 @@ const auth = {
     deleteData: async function(res, apiKey, email, db) {
         try {
             const filter = { key: apiKey, email: email };
-            const result = await db.collection.deleteOne(filter);
+
+            await db.collection.deleteOne(filter);
 
             let data = {
                 message: "All data has been deleted",
@@ -345,7 +343,7 @@ const auth = {
 
             try {
                 db = await database.getDb();
-                
+
                 let filter = { key: apiKey };
                 let updateDoc = {
                     $push: {
@@ -356,7 +354,7 @@ const auth = {
                     }
                 };
 
-                let result = await db.collection.updateOne(filter, updateDoc);
+                await db.collection.updateOne(filter, updateDoc);
 
                 return res.status(201).json({
                     data: {

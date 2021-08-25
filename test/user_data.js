@@ -18,6 +18,7 @@ chai.use(chaiHttp);
 
 let apiKey = "";
 let token = "";
+let _id = "";
 
 describe('user_data', () => {
     before(() => {
@@ -27,19 +28,19 @@ describe('user_data', () => {
             db.db.listCollections(
                 { name: collectionName }
             )
-            .next()
-            .then(async function(info) {
-                if (info) {
-                    await db.collection.drop();
-                }
-            })
-            .catch(function(err) {
-                console.error(err);
-            })
-            .finally(async function() {
-                await db.client.close();
-                resolve();
-            });
+                .next()
+                .then(async function(info) {
+                    if (info) {
+                        await db.collection.drop();
+                    }
+                })
+                .catch(function(err) {
+                    console.error(err);
+                })
+                .finally(async function() {
+                    await db.client.close();
+                    resolve();
+                });
         });
     });
 
@@ -429,6 +430,8 @@ describe('user_data', () => {
 
                     res.body.data.users[0].data[0].artefact.should.equal(JSON.stringify(artefact));
 
+                    _id = res.body.data.users[0].data[0]["_id"];
+
                     done();
                 });
         });
@@ -438,7 +441,6 @@ describe('user_data', () => {
                 .get("/data?api_key=" + apiKey)
                 .set("x-access-token", token)
                 .end((err, res) => {
-                    console.log(res.body.data);
                     res.should.have.status(200);
                     res.body.should.be.an("object");
                     res.body.data.should.be.an("array");
@@ -456,7 +458,7 @@ describe('user_data', () => {
             };
 
             const data = {
-                id: 1,
+                id: _id,
                 artefact: JSON.stringify(artefact),
                 api_key: apiKey
             };
@@ -481,7 +483,7 @@ describe('user_data', () => {
             };
 
             const data = {
-                // id: 1,
+                // id: _id,
                 artefact: JSON.stringify(artefact),
                 api_key: apiKey
             };
@@ -505,7 +507,7 @@ describe('user_data', () => {
             };
 
             const data = {
-                id: 1,
+                id: _id,
                 artefact: JSON.stringify(artefact),
                 api_key: apiKey
             };
@@ -544,7 +546,7 @@ describe('user_data', () => {
 
         it('should get 401 as we do not provide valid token', (done) => {
             const data = {
-                id: 1,
+                id: _id,
                 api_key: apiKey
             };
 
@@ -562,7 +564,7 @@ describe('user_data', () => {
 
         it('should get 500 as we do not provide id', (done) => {
             const data = {
-                // id: 1,
+                // id: _id,
                 api_key: apiKey
             };
 
@@ -579,7 +581,7 @@ describe('user_data', () => {
 
         it('should get 204 as we do provide valid token', (done) => {
             const data = {
-                id: 1,
+                id: _id,
                 api_key: apiKey
             };
 

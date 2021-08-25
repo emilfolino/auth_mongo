@@ -8,7 +8,7 @@ const users = {
             db = await database.getDb();
 
             const filter = { key: apiKey };
-            const suppress = { users: { email: 1, password : 0 }};
+            const suppress = { users: { email: 1, password: 0 }};
 
             const keyObject = await db.collection.findOne(filter, suppress);
 
@@ -19,7 +19,7 @@ const users = {
                     return { email: user.email };
                 });
             }
-            
+
             return res.status(200).json({
                 data: returnObject
             });
