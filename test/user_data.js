@@ -300,11 +300,24 @@ describe('user_data', () => {
                 .post("/register")
                 .send(user)
                 .end((err, res) => {
-                    res.should.have.status(200);
+                    res.should.have.status(201);
                     res.body.should.be.an("object");
                     res.body.should.have.property("data");
                     res.body.data.should.have.property("message");
                     res.body.data.message.should.equal("User successfully registered.");
+
+                    done();
+                });
+        });
+
+        it('200 getting users for api key, 3 users', (done) => {
+            chai.request(server)
+                .get("/users?api_key=" + apiKey)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.have.property("data");
+                    res.body.data.should.be.an("array");
+                    res.body.data.length.should.equal(3);
 
                     done();
                 });
