@@ -288,6 +288,27 @@ describe('user_data', () => {
                     done();
                 });
         });
+
+        it('should get 201 registering user for apiKey', (done) => {
+            let user = {
+                email: "test3@example.com",
+                password: "test123",
+                api_key: apiKey
+            };
+
+            chai.request(server)
+                .post("/register")
+                .send(user)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.an("object");
+                    res.body.should.have.property("data");
+                    res.body.data.should.have.property("message");
+                    res.body.data.message.should.equal("User successfully registered.");
+
+                    done();
+                });
+        });
     });
 
     describe('GET /data', () => {
