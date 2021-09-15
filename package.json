@@ -21,6 +21,7 @@
         "javascript-style-guide": "^1.0.1",
         "mocha": "^6.2.0",
         "node-html-parser": "^1.1.12",
+        "nodemon": "^2.0.12",
         "nyc": "^14.1.1"
     },
     "dependencies": {
