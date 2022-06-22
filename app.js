@@ -4,6 +4,8 @@ const path = require('path');
 const morgan = require('morgan');
 const cors = require('cors');
 
+require('dotenv').config();
+
 const app = express();
 
 const auth = require("./route/auth.js");

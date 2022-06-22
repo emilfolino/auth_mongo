@@ -82,9 +82,3 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
-
-
-# auth specific
-config
-
-*.sqlite

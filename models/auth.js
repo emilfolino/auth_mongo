@@ -5,15 +5,7 @@ const validator = require("email-validator");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-let config;
-
-try {
-    config = require('../config/config.json');
-} catch (error) {
-    console.error(error);
-}
-
-const jwtSecret = process.env.JWT_SECRET || config.secret;
+const jwtSecret = process.env.JWT_SECRET;
 
 const auth = {
     checkAPIKey: function (req, res, next) {
