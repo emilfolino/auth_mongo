@@ -14,7 +14,7 @@ const data = require("./route/data.js");
 
 const authModel = require("./models/auth.js");
 
-const port = 8666;
+const port = process.env.PORT || 8666;
 
 app.use(cors());
 app.options('*', cors());
